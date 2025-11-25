@@ -1,0 +1,39 @@
+{
+  "main": "index.html",
+  "preload": "preload/services.js",
+  "logo": "logo.png",
+  "development": {
+    "main": "http://localhost:5173"
+  },
+  "features": [
+    {
+      "code": "translate",
+      "explain": "AI智能翻译 - 选中文本快速翻译", 
+      "cmds": [
+        "翻译",
+        "translate",
+        "fy",
+        {
+          "type": "over",
+          "label": "智能翻译",
+          "minLength": 1
+        },
+        {
+          "type": "regex",
+          "label": "智能翻译",
+          "match": "/[\\s\\S]+/",
+          "minLength": 1
+        }
+      ]
+    },
+    {
+      "code": "settings",
+      "explain": "API 接口设置",
+      "cmds": [
+        "翻译设置",
+        "API设置",
+        "translate settings"
+      ]
+    }
+  ]
+}
