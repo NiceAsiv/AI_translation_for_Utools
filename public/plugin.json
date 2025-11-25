@@ -1,4 +1,9 @@
 {
+  "pluginName": "AI智能翻译",
+  "version": "1.1.0",
+  "description": "优雅、快速的 AI 翻译插件，支持多种 AI 服务",
+  "author": "NiceAsiv",
+  "homepage": "https://github.com/NiceAsiv/AI_translation_for_Utools",
   "main": "index.html",
   "preload": "preload/services.js",
   "logo": "logo.png",
@@ -12,6 +17,8 @@
       "cmds": [
         "翻译",
         "translate",
+        "翻译成中文",
+        "翻译成英文",
         "fy",
         {
           "type": "over",
