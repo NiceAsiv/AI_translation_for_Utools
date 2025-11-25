@@ -34,7 +34,6 @@ export const appleTheme = createTheme({
   },
   typography: {
     fontFamily: [
-      'Inter',
       'Noto Sans SC',
       '-apple-system',
       'BlinkMacSystemFont',
