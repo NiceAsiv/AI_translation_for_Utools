@@ -3,6 +3,7 @@ const path = require('node:path')
 
 // 配置存储的键名
 const CONFIG_KEY = 'ai-translate-config'
+const BASE_CONFIG_KEY = 'ai-translate-base-config' // 基础配置(不加密)
 
 // 获取配置
 function getConfig() {
@@ -58,6 +59,33 @@ function saveConfig(config) {
   }
 }
 
+// 获取基础配置(自定义提示词、自定义features等)
+function getBaseConfig() {
+  try {
+    const config = window.utools.dbStorage.getItem(BASE_CONFIG_KEY)
+    if (config) {
+      return config
+    }
+  } catch (error) {
+    console.error('读取基础配置失败:', error)
+  }
+  // 返回默认配置
+  return {
+    customPrompt: '' // 自定义提示词,留空则使用默认提示词
+  }
+}
+
+// 保存基础配置
+function saveBaseConfig(config) {
+  try {
+    window.utools.dbStorage.setItem(BASE_CONFIG_KEY, config)
+    return true
+  } catch (error) {
+    console.error('保存基础配置失败:', error)
+    throw error
+  }
+}
+
 // API 端点映射
 // 通过 window 对象向渲染进程注入 nodejs 能力
 window.services = {
@@ -69,6 +97,16 @@ window.services = {
   // 保存配置
   async saveConfig(config) {
     return saveConfig(config)
+  },
+
+  // 获取基础配置
+  async getBaseConfig() {
+    return getBaseConfig()
+  },
+
+  // 保存基础配置
+  async saveBaseConfig(config) {
+    return saveBaseConfig(config)
   },
 
   // AI 翻译服务
@@ -138,8 +176,12 @@ async function translateWithOpenAI(provider, text, to) {
     ru: 'Русский'
   }
 
-  // 检查是否是通义千问的翻译模型（qwen-mt-*）
+  // 检查是否是通义千问的翻译模型(qwen-mt-*)
   const isQwenMT = provider.model && provider.model.startsWith('qwen-mt')
+  
+  // 获取基础配置中的自定义提示词
+  const baseConfig = getBaseConfig()
+  const customPrompt = baseConfig.customPrompt || ''
   
   // 构建请求体
   let requestBody = {
@@ -165,12 +207,23 @@ async function translateWithOpenAI(provider, text, to) {
     console.log('通义千问翻译请求:', requestBody)
   } else {
     // 标准 OpenAI 格式
+    // 获取自定义提示词
+    let systemPrompt = customPrompt.trim()
+    
+    // 如果没有自定义提示词,使用默认提示词
+    if (!systemPrompt) {
+      systemPrompt = `You are a professional translator. Translate the given text to ${languageMap[to] || to}. Only return the translated text without any explanation.`
+    } else {
+      // 替换自定义提示词中的 [目标语言] 占位符
+      systemPrompt = systemPrompt.replace(/\[目标语言\]/g, languageMap[to] || to)
+    }
+    
     requestBody = {
       model: provider.model,
       messages: [
         {
           role: 'system',
-          content: `You are a professional translator. Translate the given text to ${languageMap[to] || to}. Only return the translated text without any explanation.`
+          content: systemPrompt
         },
         {
           role: 'user',

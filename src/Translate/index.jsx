@@ -333,7 +333,7 @@ export default function Translate({ enterAction }) {
                       fontWeight: 500,
                     }}
                   >
-                    {provider.name} {provider.model && `· ${provider.model}`}
+                    {provider.name} {provider.model && ` |  ${provider.model}`}
                   </MenuItem>
                 ))}
               </Select>
