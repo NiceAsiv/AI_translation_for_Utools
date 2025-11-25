@@ -31,13 +31,15 @@ export default function Translate({ enterAction }) {
   const [targetLang, setTargetLang] = useState('zh')
   const [isTranslating, setIsTranslating] = useState(false)
   const [apiConfig, setApiConfig] = useState({ provider: '未配置', model: '', providers: [], activeProviderId: '' })
+  const [forceTargetLang, setForceTargetLang] = useState(null) // 强制指定的目标语言
   const textareaRef = useRef(null)
   const debounceTimerRef = useRef(null)
+  const isFirstLoadRef = useRef(true) // 标记是否首次加载
   const theme = useTheme()
 
-  // 智能检测语言并自动切换目标语言
-  const detectLanguageAndSetTarget = (text) => {
-    if (!text.trim()) return
+  // 智能检测语言并返回目标语言
+  const detectLanguage = (text) => {
+    if (!text.trim()) return 'zh'
 
     // 检测中文（包括中日韩统一表意文字）
     const chineseRegex = /[\u4e00-\u9fa5]/
@@ -56,44 +58,54 @@ export default function Translate({ enterAction }) {
 
     if (chineseRegex.test(text)) {
       // 中文 -> 翻译成英文
-      setTargetLang('en')
+      return 'en'
     } else if (japaneseRegex.test(text)) {
       // 日文 -> 翻译成中文
-      setTargetLang('zh')
+      return 'zh'
     } else if (koreanRegex.test(text)) {
       // 韩文 -> 翻译成中文
-      setTargetLang('zh')
+      return 'zh'
     } else if (russianRegex.test(text)) {
       // 俄文 -> 翻译成中文
-      setTargetLang('zh')
+      return 'zh'
     } else if (frenchRegex.test(text)) {
       // 法文 -> 翻译成中文
-      setTargetLang('zh')
+      return 'zh'
     } else if (germanRegex.test(text)) {
       // 德文 -> 翻译成中文
-      setTargetLang('zh')
+      return 'zh'
     } else if (spanishRegex.test(text)) {
       // 西班牙文 -> 翻译成中文
-      setTargetLang('zh')
+      return 'zh'
     } else {
       // 默认认为是英文 -> 翻译成中文
-      setTargetLang('zh')
+      return 'zh'
     }
   }
 
   // 自动翻译:当输入文本改变时触发
   useEffect(() => {
+    // 首次加载时跳过
+    if (isFirstLoadRef.current) {
+      return
+    }
+
     if (!sourceText.trim()) {
       setTranslatedText('')
       return
     }
     
-    // 智能检测语言并设置目标语言
-    detectLanguageAndSetTarget(sourceText)
-    
     // 清除之前的定时器
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current)
+    }
+    
+    // 如果没有强制指定目标语言，则智能检测语言并设置目标语言
+    if (!forceTargetLang) {
+      const detectedLang = detectLanguage(sourceText)
+      if (detectedLang !== targetLang) {
+        setTargetLang(detectedLang)
+      }
     }
     
     // 设置新的防抖定时器(500ms)
@@ -106,7 +118,7 @@ export default function Translate({ enterAction }) {
         clearTimeout(debounceTimerRef.current)
       }
     }
-  }, [sourceText, sourceLang, targetLang])
+  }, [sourceText])
 
   useEffect(() => {
     // 加载API配置
@@ -118,27 +130,50 @@ export default function Translate({ enterAction }) {
         ? enterAction.payload 
         : enterAction.payload.text || ''
       
-      // 只有当文本不为空且不是默认的"翻译"时才设置
-      if (text.trim() && text.trim() !== '翻译') {
-        // 先检测语言并设置目标语言
-        detectLanguageAndSetTarget(text)
+      // 检查是否是特定的翻译指令
+      const code = enterAction.code || ''
+      
+      if (code === 'translateToChinese') {
+        // 翻译成中文模式
+        setForceTargetLang('zh')
+        setTargetLang('zh')
         setSourceText(text)
         if (text.trim()) {
-          // 延迟执行翻译，确保目标语言已设置
-          setTimeout(() => {
-            handleTranslate(text)
-          }, 100)
+          setTimeout(() => handleTranslate(text), 150)
         }
+      } else if (code === 'translateToEnglish') {
+        // 翻译成英文模式
+        setForceTargetLang('en')
+        setTargetLang('en')
+        setSourceText(text)
+        if (text.trim()) {
+          setTimeout(() => handleTranslate(text), 150)
+        }
+      } else if (text.trim() && text.trim() !== '翻译') {
+        // 普通翻译模式：智能检测
+        setForceTargetLang(null)
+        const detectedLang = detectLanguage(text)
+        setTargetLang(detectedLang)
+        setSourceText(text)
+        setTimeout(() => handleTranslate(text), 150)
       } else {
         // 清空输入和翻译结果
+        setForceTargetLang(null)
         setSourceText('')
         setTranslatedText('')
       }
     } else {
       // 如果没有 payload，也清空
+      setForceTargetLang(null)
       setSourceText('')
       setTranslatedText('')
     }
+    
+    // 标记首次加载完成
+    setTimeout(() => {
+      isFirstLoadRef.current = false
+    }, 200)
+    
     // 聚焦输入框
     textareaRef.current?.focus()
   }, [enterAction])
@@ -320,6 +355,25 @@ export default function Translate({ enterAction }) {
                 },
                 '& .MuiChip-label': {
                   paddingLeft: '6px',
+                  paddingRight: '8px',
+                },
+              }}
+            />
+          )}
+          
+          {/* 显示翻译模式提示 */}
+          {forceTargetLang && (
+            <Chip
+              label={forceTargetLang === 'zh' ? '固定译为中文' : '固定译为英文'}
+              size="small"
+              sx={{
+                bgcolor: 'rgba(94, 92, 230, 0.1)',
+                color: '#5e5ce6',
+                fontWeight: 500,
+                fontSize: '11px',
+                height: '22px',
+                '& .MuiChip-label': {
+                  paddingLeft: '8px',
                   paddingRight: '8px',
                 },
               }}
