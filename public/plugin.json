@@ -13,22 +13,42 @@
   "features": [
     {
       "code": "translate",
-      "explain": "AI智能翻译 - 选中文本快速翻译", 
+      "explain": "AI智能翻译", 
       "cmds": [
         "翻译",
         "translate",
-        "翻译成中文",
-        "翻译成英文",
         "fy",
         {
           "type": "over",
           "label": "智能翻译",
           "minLength": 1
-        },
+        }
+      ]
+    },
+    {
+      "code": "translateToChinese",
+      "explain": "翻译成中文",
+      "cmds": [
+        "翻译成中文",
+        "译中",
+        "translate to chinese",
         {
-          "type": "regex",
-          "label": "智能翻译",
-          "match": "/[\\s\\S]+/",
+          "type": "over",
+          "label": "翻译成中文",
+          "minLength": 1
+        }
+      ]
+    },
+    {
+      "code": "translateToEnglish",
+      "explain": "翻译成英文",
+      "cmds": [
+        "翻译成英文",
+        "译英",
+        "translate to english",
+        {
+          "type": "over",
+          "label": "翻译成英文",
           "minLength": 1
         }
       ]

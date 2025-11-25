@@ -16,6 +16,8 @@ export default function App () {
       // 根据进入的功能设置初始页面
       if (action.code === 'settings') {
         setCurrentPage('settings')
+      } else if (action.code === 'translateToChinese' || action.code === 'translateToEnglish' || action.code === 'translate') {
+        setCurrentPage('translate')
       } else {
         setCurrentPage('translate')
       }

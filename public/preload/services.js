@@ -75,12 +75,9 @@ window.services = {
   async translate({ text, from = 'auto', to = 'zh' }) {
     try {
       const config = getConfig()
-      console.log('获取配置:', config)
       
       // 获取当前活跃的服务商
-      const activeProvider = config.providers?.find(p => p.id === config.activeProviderId)
-      console.log('当前活动的服务商:', activeProvider)
-      
+      const activeProvider = config.providers?.find(p => p.id === config.activeProviderId)      
       if (!activeProvider) {
         return {
           success: false,
