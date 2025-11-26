@@ -6,7 +6,7 @@
   "homepage": "https://github.com/NiceAsiv/AI_translation_for_Utools",
   "main": "index.html",
   "preload": "preload/services.js",
-  "logo": "trans_logo.png",
+  "logo": "logo.png",
   "development": {
     "main": "http://localhost:5173"
   },

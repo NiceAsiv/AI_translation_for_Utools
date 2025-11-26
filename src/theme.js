@@ -1,6 +1,5 @@
 import { createTheme } from '@mui/material/styles'
 
-// 苹果风格的 Material-UI 主题
 export const appleTheme = createTheme({
   palette: {
     primary: {
@@ -34,14 +33,14 @@ export const appleTheme = createTheme({
   },
   typography: {
     fontFamily: [
-      'Noto Sans SC',
+      'Arial',
+      'sans-serif',
+      'PingFang SC',
       '-apple-system',
       'BlinkMacSystemFont',
       'SF Pro Display',
       'SF Pro Text',
-      'PingFang SC',
       'Helvetica Neue',
-      'sans-serif',
     ].join(','),
     fontSize: 14,
     fontWeightLight: 300,
