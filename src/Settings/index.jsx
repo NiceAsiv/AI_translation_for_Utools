@@ -34,18 +34,8 @@ import {
 } from '@mui/icons-material'
 
 export default function Settings() {
-  const [providers, setProviders] = useState([
-    {
-      id: 'openai-default',
-      name: 'OpenAI',
-      endpoint: 'https://api.openai.com/v1',
-      apiKey: '',
-      model: 'gpt-4o-mini',
-      isDefault: true,
-      enabled: true
-    }
-  ])
-  const [activeProviderId, setActiveProviderId] = useState('openai-default')
+  const [providers, setProviders] = useState([])
+  const [activeProviderId, setActiveProviderId] = useState('')
   const [showKeys, setShowKeys] = useState({})
   const [saving, setSaving] = useState(false)
   const [showInfo, setShowInfo] = useState(false)
@@ -64,9 +54,13 @@ export default function Settings() {
   const loadConfig = async () => {
     const savedConfig = await window.services.getConfig()
     console.log('加载的配置:', savedConfig)
-    if (savedConfig && savedConfig.providers) {
+    if (savedConfig && savedConfig.providers && savedConfig.providers.length > 0) {
       setProviders(savedConfig.providers)
       setActiveProviderId(savedConfig.activeProviderId || savedConfig.providers[0]?.id)
+    } else {
+      // 如果没有配置，初始化一个空列表
+      setProviders([])
+      setActiveProviderId('')
     }
   }
 
@@ -113,7 +107,7 @@ export default function Settings() {
 
   const handleAddProvider = () => {
     const newId = `custom-${Date.now()}`
-    setProviders([...providers, {
+    const newProvider = {
       id: newId,
       name: '新服务商',
       endpoint: '',
@@ -121,18 +115,20 @@ export default function Settings() {
       model: '',
       isDefault: false,
       enabled: true
-    }])
+    }
+    setProviders([...providers, newProvider])
+    // 如果这是第一个provider，自动设为active
+    if (providers.length === 0) {
+      setActiveProviderId(newId)
+    }
   }
 
   const handleDeleteProvider = (id) => {
-    const provider = providers.find(p => p.id === id)
-    if (provider?.isDefault) {
-      window.utools.showNotification('不能删除默认服务商')
-      return
-    }
-    setProviders(providers.filter(p => p.id !== id))
-    if (activeProviderId === id && providers.length > 1) {
-      setActiveProviderId(providers[0].id)
+    const newProviders = providers.filter(p => p.id !== id)
+    setProviders(newProviders)
+    // 如果删除的是当前活动的provider，切换到第一个
+    if (activeProviderId === id) {
+      setActiveProviderId(newProviders.length > 0 ? newProviders[0].id : '')
     }
   }
 
@@ -339,28 +335,25 @@ export default function Settings() {
                     </AccordionSummary>
                     <AccordionDetails sx={{ px: 2.5, py: 2, bgcolor: 'rgba(0, 0, 0, 0.02)' }}>
                       <Stack spacing={2}>
-                        {!provider.isDefault && (
-                          <TextField
-                            label="服务商名称"
-                            size="small"
-                            value={provider.name}
-                            onChange={(e) => handleUpdateProvider(provider.id, 'name', e.target.value)}
-                            fullWidth
-                            sx={{
-                              '& .MuiOutlinedInput-root': {
-                                fontSize: '13px',
-                                borderRadius: '8px',
-                              },
-                            }}
-                          />
-                        )}
+                        <TextField
+                          label="服务商名称"
+                          size="small"
+                          value={provider.name}
+                          onChange={(e) => handleUpdateProvider(provider.id, 'name', e.target.value)}
+                          fullWidth
+                          sx={{
+                            '& .MuiOutlinedInput-root': {
+                              fontSize: '13px',
+                              borderRadius: '8px',
+                            },
+                          }}
+                        />
 
                         <TextField
                           label="API 端点"
                           size="small"
                           value={provider.endpoint}
                           onChange={(e) => handleUpdateProvider(provider.id, 'endpoint', e.target.value)}
-                          disabled={provider.isDefault}
                           placeholder="https://api.openai.com/v1"
                           fullWidth
                           sx={{
@@ -411,11 +404,7 @@ export default function Settings() {
                           onChange={(e) => handleUpdateProvider(provider.id, 'model', e.target.value)}
                           placeholder="gpt-4o-mini"
                           fullWidth
-                          helperText={
-                            provider.isDefault
-                              ? '常用: gpt-4o, gpt-4o-mini, gpt-4-turbo, gpt-3.5-turbo'
-                              : ''
-                          }
+                          helperText="输入模型名称，如：gpt-4o-mini, qwen-mt-flash 等"
                           sx={{
                             '& .MuiOutlinedInput-root': {
                               fontSize: '13px',
@@ -427,24 +416,22 @@ export default function Settings() {
                           }}
                         />
 
-                        {!provider.isDefault && (
-                          <Button
-                            size="small"
-                            startIcon={<Delete sx={{ fontSize: 16 }} />}
-                            onClick={() => handleDeleteProvider(provider.id)}
-                            sx={{
-                              color: '#ff3b30',
-                              textTransform: 'none',
-                              fontSize: '12px',
-                              alignSelf: 'flex-start',
-                              '&:hover': {
-                                bgcolor: 'rgba(255, 59, 48, 0.1)',
-                              },
-                            }}
-                          >
-                            删除此服务商
-                          </Button>
-                        )}
+                        <Button
+                          size="small"
+                          startIcon={<Delete sx={{ fontSize: 16 }} />}
+                          onClick={() => handleDeleteProvider(provider.id)}
+                          sx={{
+                            color: '#ff3b30',
+                            textTransform: 'none',
+                            fontSize: '12px',
+                            alignSelf: 'flex-start',
+                            '&:hover': {
+                              bgcolor: 'rgba(255, 59, 48, 0.1)',
+                            },
+                          }}
+                        >
+                          删除此服务商
+                        </Button>
                       </Stack>
                     </AccordionDetails>
                   </Accordion>
@@ -492,11 +479,23 @@ export default function Settings() {
                       • 点击圆圈图标可切换当前使用的服务商
                     </Typography>
                     <Typography sx={{ fontSize: '12px', color: '#86868b' }}>
-                      • OpenAI 是预设服务商,只需填写 API Key 和模型
+                      • 支持所有兼容 OpenAI API 的服务
                     </Typography>
                     <Typography sx={{ fontSize: '12px', color: '#86868b' }}>
-                      • 自定义服务商支持所有兼容 OpenAI API 的服务
+                      • 点击"添加"按钮创建新的服务商配置
                     </Typography>
+                    <Divider sx={{ my: 1 }} />
+                    <Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#1d1d1f' }}>
+                      OpenAI 配置示例:
+                    </Typography>
+                    <Box sx={{ bgcolor: 'rgba(0, 0, 0, 0.04)', p: 1.5, borderRadius: '8px' }}>
+                      <Typography sx={{ fontSize: '11px', color: '#636366', fontFamily: 'monospace' }}>
+                        端点: https://api.openai.com/v1
+                      </Typography>
+                      <Typography sx={{ fontSize: '11px', color: '#636366', fontFamily: 'monospace' }}>
+                        模型: gpt-4o-mini, gpt-4o, gpt-4-turbo
+                      </Typography>
+                    </Box>
                     <Divider sx={{ my: 1 }} />
                     <Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#1d1d1f' }}>
                       阿里云通义千问翻译模型示例:

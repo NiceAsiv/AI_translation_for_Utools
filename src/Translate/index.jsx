@@ -195,18 +195,39 @@ export default function Translate({ enterAction }) {
   }, [enterAction])
 
   const loadApiConfig = async () => {
-    const config = await window.services.getConfig()
-    if (config && config.providers && config.activeProviderId) {
-      const activeProvider = config.providers.find(p => p.id === config.activeProviderId)
-      if (activeProvider) {
+    try {
+      const config = await window.services.getConfig()
+      if (config && config.providers && config.activeProviderId) {
+        const activeProvider = config.providers.find(p => p.id === config.activeProviderId)
+        if (activeProvider) {
+          setApiConfig({
+            provider: activeProvider.name || '未配置',
+            model: activeProvider.model || '',
+            providers: config.providers || [],
+            activeProviderId: config.activeProviderId
+          })
+        } else {
+          // 如果找不到active provider，使用第一个
+          const firstProvider = config.providers[0]
+          if (firstProvider) {
+            setApiConfig({
+              provider: firstProvider.name || '未配置',
+              model: firstProvider.model || '',
+              providers: config.providers || [],
+              activeProviderId: firstProvider.id
+            })
+          }
+        }
+      } else {
         setApiConfig({
-          provider: activeProvider.name || '未配置',
-          model: activeProvider.model || '',
-          providers: config.providers || [],
-          activeProviderId: config.activeProviderId
+          provider: '未配置',
+          model: '',
+          providers: [],
+          activeProviderId: ''
         })
       }
-    } else {
+    } catch (error) {
+      console.error('加载API配置失败:', error)
       setApiConfig({
         provider: '未配置',
         model: '',
@@ -281,15 +302,22 @@ export default function Translate({ enterAction }) {
   }
 
   const handleProviderChange = async (providerId) => {
-    const config = await window.services.getConfig()
-    if (config) {
-      config.activeProviderId = providerId
-      await window.services.setConfig(config)
-      await loadApiConfig()
-      // 如果有文本，重新翻译
-      if (sourceText.trim()) {
-        handleTranslate()
+    try {
+      console.log('切换API provider到:', providerId)
+      const config = await window.services.getConfig()
+      if (config) {
+        config.activeProviderId = providerId
+        await window.services.saveConfig(config)
+        await loadApiConfig()
+        console.log('API provider切换成功')
+        // 如果有文本，重新翻译
+        if (sourceText.trim()) {
+          handleTranslate()
+        }
       }
+    } catch (error) {
+      console.error('切换API provider失败:', error)
+      window.utools?.showNotification('切换失败，请重试')
     }
   }
 
@@ -313,7 +341,7 @@ export default function Translate({ enterAction }) {
           {apiConfig.providers && apiConfig.providers.length > 0 ? (
             <FormControl size="small" sx={{ minWidth: 120 }}>
               <Select
-                value={apiConfig.activeProviderId}
+                value={apiConfig.activeProviderId || ''}
                 onChange={(e) => handleProviderChange(e.target.value)}
                 sx={{
                   bgcolor: 'rgba(0, 122, 255, 0.1)',
@@ -357,16 +385,21 @@ export default function Translate({ enterAction }) {
           ) : (
             <Chip
               icon={<TranslateIcon sx={{ fontSize: 14 }} />}
-              label={apiConfig.provider}
+              label="未配置 API"
               size="small"
+              onClick={handleOpenSettings}
               sx={{
-                bgcolor: 'rgba(0, 122, 255, 0.1)',
-                color: '#007aff',
+                bgcolor: 'rgba(255, 149, 0, 0.1)',
+                color: '#ff9500',
                 fontWeight: 600,
                 fontSize: '12px',
                 height: '24px',
+                cursor: 'pointer',
+                '&:hover': {
+                  bgcolor: 'rgba(255, 149, 0, 0.2)',
+                },
                 '& .MuiChip-icon': {
-                  color: '#007aff',
+                  color: '#ff9500',
                   marginLeft: '6px',
                 },
                 '& .MuiChip-label': {
