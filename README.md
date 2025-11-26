@@ -24,7 +24,7 @@
 ### 2\. 获取代码与安装
 
 ```bash
-git clone https://github.com/NiceAsiv/AI_translation_for_Utools.git
+git clone https://github.com/NiceAsiv/AI_translation_for_uTools.git
 cd AI_translation_for_Utools
 pnpm install
 ```
