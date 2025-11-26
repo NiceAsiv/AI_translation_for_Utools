@@ -120,6 +120,22 @@ export default function Translate({ enterAction }) {
     }
   }, [sourceText])
 
+  // 当目标语言改变时重新翻译
+  useEffect(() => {
+    // 首次加载时跳过
+    if (isFirstLoadRef.current) {
+      return
+    }
+
+    // 只有当输入文本不为空时，才重新翻译
+    if (sourceText.trim()) {
+      handleTranslate()
+    } else {
+      // 如果输入为空，清空翻译结果
+      setTranslatedText('')
+    }
+  }, [targetLang])
+
   useEffect(() => {
     // 加载API配置
     loadApiConfig()
@@ -503,12 +519,12 @@ export default function Translate({ enterAction }) {
                 },
               }}
             >
-              {languages.filter(l => l.value !== 'auto').map((lang) => (
+              { languages.filter(l => l.value !== 'auto').map((lang) => (
                 <MenuItem key={lang.value} value={lang.value} sx={{ fontSize: '13px' }}>
                   {lang.label}
                 </MenuItem>
               ))}
-            </Select>
+            </Select>                              
           </FormControl>
         </Box>
 
@@ -516,41 +532,49 @@ export default function Translate({ enterAction }) {
         <Box className="flex flex-1 min-h-0">
           {/* 输入侧 */}
           <Box className="flex-1 flex flex-col min-w-0">
-            <TextField
-              inputRef={textareaRef}
-              multiline
-              value={sourceText}
-              onChange={(e) => setSourceText(e.target.value)}
-              placeholder="输入文字"
-              variant="outlined"
-              sx={{
-                flex: 1,
-                '& .MuiOutlinedInput-root': {
-                  height: '100%',
-                  alignItems: 'flex-start',
-                  padding: 0,
-                  fontSize: '14px',
-                  lineHeight: 1.6,
-                  fontFamily: 'inherit',
-                  '& fieldset': {
-                    border: 'none',
-                  },
-                  '& textarea': {
+            <Box sx={{ flex: 1, position: 'relative', minHeight: 0 }}>
+              <TextField
+                inputRef={textareaRef}
+                multiline
+                value={sourceText}
+                onChange={(e) => setSourceText(e.target.value)}
+                placeholder="输入文字"
+                variant="outlined"
+                sx={{
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  '& .MuiOutlinedInput-root': {
+                    height: '100%',
+                    alignItems: 'flex-start',
                     padding: '12px 14px',
-                    '&::placeholder': {
-                      color: '#86868b',
-                      opacity: 1,
+                    fontSize: '14px',
+                    lineHeight: 1.6,
+                    fontFamily: 'inherit',
+                    '& fieldset': {
+                      border: 'none',
+                    },
+                    '& textarea': {
+                      height: '100% !important',
+                      overflow: 'auto !important',
+                      padding: '0 !important',
+                      '&::placeholder': {
+                        color: '#86868b',
+                        opacity: 1,
+                      },
                     },
                   },
-                },
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  handleTranslate()
-                }
-              }}
-            />
-            <Box className="px-3.5 py-2 flex items-center justify-between" sx={{ borderTop: '1px solid rgba(0, 0, 0, 0.12)' }}>
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    handleTranslate()
+                  }
+                }}
+              />
+            </Box>
+            <Box className="px-3.5 py-2 flex items-center justify-between" sx={{ borderTop: '1px solid rgba(0, 0, 0, 0.12)', minHeight: '48px', height: '48px' }}>
               <Typography
                 variant="caption"
                 sx={{
@@ -591,7 +615,13 @@ export default function Translate({ enterAction }) {
 
           {/* 输出侧 */}
           <Box className="flex-1 flex flex-col min-w-0 bg-gray-50/30">
-            <Box className="flex-1 p-3.5 overflow-y-auto">
+            <Box 
+              className="flex-1 p-3.5 overflow-y-auto"
+              sx={{
+                overflowY: 'auto',
+                overflowX: 'hidden',
+              }}
+            >
               {isTranslating ? (
                 <Box className="flex flex-col items-center justify-center h-full gap-2">
                   <CircularProgress size={20} sx={{ color: '#007aff' }} />
@@ -623,8 +653,8 @@ export default function Translate({ enterAction }) {
                 </Fade>
               ) : null}
             </Box>
-            {translatedText && (
-              <Box className="px-3.5 py-2 flex items-center justify-end" sx={{ borderTop: '1px solid rgba(0, 0, 0, 0.12)' }}>
+            <Box className="px-3.5 py-2 flex items-center justify-end" sx={{ borderTop: '1px solid rgba(0, 0, 0, 0.12)', minHeight: '48px', height: '48px' }}>
+              {translatedText && (
                 <Button
                   size="small"
                   startIcon={<ContentCopy sx={{ fontSize: 14 }} />}
@@ -652,8 +682,8 @@ export default function Translate({ enterAction }) {
                 >
                   复制
                 </Button>
-              </Box>
-            )}
+              )}
+            </Box>
           </Box>
         </Box>
       </Paper>
