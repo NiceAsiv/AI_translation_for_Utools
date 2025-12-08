@@ -161,19 +161,49 @@ window.services = {
   }
 }
 
+// 默认翻译提示词模板
+const DEFAULT_TRANSLATE_PROMPT = 'You are a professional translator. Translate the given text to [目标语言]. Only return the translated text without any explanation.'
+
 // OpenAI API 翻译
 async function translateWithOpenAI(provider, text, to) {
   const endpoint = provider.endpoint + '/chat/completions'
   
+  // OpenAI API 使用的语言映射
   const languageMap = {
     zh: '中文',
+    'zh-cn': '中文',
+    'zh-tw': '繁体中文',
     en: 'English',
     ja: '日本語',
     ko: '한국어',
     fr: 'Français',
     de: 'Deutsch',
     es: 'Español',
-    ru: 'Русский'
+    ru: 'Русский',
+    pt: 'Português',
+    it: 'Italiano',
+    ar: 'العربية',
+    th: 'ไทย',
+    vi: 'Tiếng Việt'
+  }
+  
+  // 通义千问翻译模型使用的语言代码映射
+  const qwenLanguageMap = {
+    zh: 'zh',
+    'zh-cn': 'zh',
+    'zh-tw': 'zh-TW',
+    en: 'en',
+    ja: 'ja',
+    ko: 'ko',
+    fr: 'fr',
+    de: 'de',
+    es: 'es',
+    ru: 'ru',
+    pt: 'pt',
+    it: 'it',
+    ar: 'ar',
+    th: 'th',
+    vi: 'vi'
   }
 
   // 检查是否是通义千问的翻译模型(qwen-mt-*)
@@ -190,7 +220,9 @@ async function translateWithOpenAI(provider, text, to) {
 
   if (isQwenMT) {
     // 通义千问机器翻译模型使用特殊格式
-    // translation_options 需要放在顶层,不是在 extra_body 中
+    // 使用通义千问专用的语言代码映射
+    const targetLangCode = qwenLanguageMap[to] || to
+    
     requestBody = {
       model: provider.model,
       messages: [
@@ -201,7 +233,7 @@ async function translateWithOpenAI(provider, text, to) {
       ],
       translation_options: {
         source_lang: 'auto',
-        target_lang: languageMap[to] || to
+        target_lang: targetLangCode
       }
     }
     console.log('通义千问翻译请求:', requestBody)
@@ -210,13 +242,13 @@ async function translateWithOpenAI(provider, text, to) {
     // 获取自定义提示词
     let systemPrompt = customPrompt.trim()
     
-    // 如果没有自定义提示词,使用默认提示词
+    // 如果没有自定义提示词,使用默认提示词模板
     if (!systemPrompt) {
-      systemPrompt = `You are a professional translator. Translate the given text to ${languageMap[to] || to}. Only return the translated text without any explanation.`
-    } else {
-      // 替换自定义提示词中的 [目标语言] 占位符
-      systemPrompt = systemPrompt.replace(/\[目标语言\]/g, languageMap[to] || to)
+      systemPrompt = DEFAULT_TRANSLATE_PROMPT
     }
+    
+    // 替换提示词中的 [目标语言] 占位符
+    systemPrompt = systemPrompt.replace(/\[目标语言\]/g, languageMap[to] || to)
     
     requestBody = {
       model: provider.model,
